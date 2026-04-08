@@ -1,5 +1,24 @@
 import { log } from "@/shared/logging";
-import SegfaultHandler from "segfault-handler";
+
+function maybeRegisterSegfaultHandler() {
+  try {
+    const segfaultHandlerModule = require("segfault-handler") as
+      | { registerHandler?: () => void }
+      | { default?: { registerHandler?: () => void } };
+    const segfaultHandler =
+      "default" in segfaultHandlerModule
+        ? segfaultHandlerModule.default
+        : segfaultHandlerModule;
+    segfaultHandler?.registerHandler?.();
+  } catch (error) {
+    log.warn(
+      "segfault-handler unavailable; continuing without native crash handler",
+      {
+        error,
+      }
+    );
+  }
+}
 
 export function handleProcessIssues() {
   process.on("uncaughtException", (error: Error, origin: string) => {
@@ -23,5 +42,5 @@ export function handleProcessIssues() {
     console.log(`About to exit with code: ${code}`);
   });
 
-  SegfaultHandler.registerHandler();
+  maybeRegisterSegfaultHandler();
 }

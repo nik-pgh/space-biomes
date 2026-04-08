@@ -908,17 +908,24 @@ ALL_SERVERS = {
     ]
 }
 
+LOCAL_BOOT_TARGETS = [
+    "logic",
+    "chat",
+    "map",
+    "gaia",
+    "web",
+    "trigger",
+    "task",
+]
+
 
 TARGET_ALIASES = {
-    "dev": [
-        "logic",
-        "chat",
-        "map",
-        "gaia_v2",
-        "web",
-        "trigger",
-        "task",
-    ],
+    # Keep the dev target aligned with the actual server name.
+    "dev": LOCAL_BOOT_TARGETS,
+    # Backwards compatibility for older launcher references.
+    "gaia_v2": ["gaia"],
+    # Supported local bring-up path for this repo.
+    "local": LOCAL_BOOT_TARGETS,
     "all": list(ALL_SERVERS.keys()),
 }
 

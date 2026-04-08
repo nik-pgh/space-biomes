@@ -57,6 +57,13 @@ Current and upcoming priorities for this fork:
 
 Biomes uses a distributed architecture but can be run locally.
 
+- For this repo's reproducible local bring-up path, start `redis-server` and
+  then run:
+  ```bash
+  ./b run --redis local
+  ```
+- `--redis` switches local boot to the empty-bootstrap path with local Redis, so
+  it does not depend on the current snapshot download being available.
 - Start with the official local setup guide:
   - https://ill-inc.github.io/biomes-game/docs/basics/running-locally
 
