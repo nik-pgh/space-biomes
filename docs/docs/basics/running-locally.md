@@ -47,10 +47,10 @@ Note that this repo supports dev containers so a quick way to setup your environ
 - Run `git lfs pull` to ensure that the LFS files are up-to-date.
 - Setup Python Virtual Environment (optional, but recommended)
   ```bash
-  python -m venv .venv
+  python3 -m venv .venv
   source .venv/bin/activate
   ```
-- Run `pip install -r requirements.txt` to download python requirements.
+- Run `python3 -m pip install -r requirements.txt` to download python requirements.
 - Install [Redis 7.0.8](https://redis.io/)
   ```bash
   curl -s https://download.redis.io/releases/redis-7.0.8.tar.gz | tar xvz -C ${HOME} \
@@ -63,9 +63,21 @@ Note that this repo supports dev containers so a quick way to setup your environ
 
 - In the Biomes repository directory,
   ```bash
-  ./b data-snapshot run
+  redis-server
+  ```
+- In another terminal, start the repo-supported local boot path:
+  ```bash
+  ./b run --redis local
   ```
 - Visit `http://localhost:3000`.
+- `--redis` uses an empty world bootstrap with local Redis-backed services, so
+  this path stays usable even when the upstream snapshot download path is
+  unavailable.
+- The older snapshot-based flow is still available when the upstream snapshot is
+  healthy:
+  ```bash
+  ./b data-snapshot run
+  ```
 
 ## Coding Environment
 

@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import sys
 from functools import update_wrapper
@@ -10,6 +11,18 @@ import click
 
 SCRIPT_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 REPO_DIR = SCRIPT_DIR / ".." / ".."
+
+
+def python_executable():
+    if python_override := os.environ.get("PYTHON"):
+        return python_override
+    if sys.executable:
+        return sys.executable
+    for candidate in ("python3", "python"):
+        resolved = shutil.which(candidate)
+        if resolved:
+            return resolved
+    raise RuntimeError("Could not find a usable Python interpreter.")
 
 
 def ensure_pip_install_voxeloo(f):
@@ -32,10 +45,9 @@ def ensure_pip_install_voxeloo(f):
 def run_pip_install_voxeloo():
     click.secho("Running `pip install ./voxeloo`...")
     click.secho()
-    # We call `python` directly here instead of sys.executable because that's
-    # how Galois is going to subsequently access Python.
     result = subprocess.run(
-        ["python", "-m", "pip", "install", "./voxeloo"], cwd=REPO_DIR
+        [python_executable(), "-m", "pip", "install", "./voxeloo"],
+        cwd=REPO_DIR,
     )
     if result.returncode != 0:
         sys.exit(result.returncode)
@@ -44,10 +56,9 @@ def run_pip_install_voxeloo():
 def run_pip_install_requirements():
     click.secho("Running `pip install -r requirements`...")
     click.secho()
-    # We call `python` directly here instead of sys.executable because that's
-    # how Galois is going to subsequently access Python.
     result = subprocess.run(
-        ["python", "-m", "pip", "install", "-r", "requirements.txt"], cwd=REPO_DIR
+        [python_executable(), "-m", "pip", "install", "-r", "requirements.txt"],
+        cwd=REPO_DIR,
     )
     if result.returncode != 0:
         sys.exit(result.returncode)
