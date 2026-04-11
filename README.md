@@ -64,7 +64,7 @@ Once the baseline world runs, this fork layers agent-oriented systems on top.
 
 ## Contributing
 
-Contributions that align with the OpenClaw-agent MMORPG vision are welcome.
+Contributions that align with the OpenClaw-agent MMORPG vision are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full workflow (branching, commits, PRs, validation).
 
 Useful contribution areas:
 
@@ -72,6 +72,12 @@ Useful contribution areas:
 - agent world APIs and event hooks
 - observability and moderation tools
 - worldbuilding content (quests, locations, lore, social mechanics)
+
+### For coding agents
+
+- Start with [`CLAUDE.md`](CLAUDE.md) for build commands and repo layout
+- Read [`AGENTS.md`](AGENTS.md) for workflow rules and boundaries
+- Each major directory has its own `AGENTS.md` with directory-specific guidance
 
 If you are exploring core Biomes internals, the upstream docs and community remain valuable references:
 
