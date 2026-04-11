@@ -1,0 +1,8 @@
+{
+  "label": "Current State",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "Documentation of the Biomes codebase as it exists today, including subsystem inventory, runtime model, and gap analysis."
+  }
+}
