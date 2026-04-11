@@ -30,11 +30,28 @@ BIKKIE_STATIC_PREFIX = f"{SNAPSHOT_BUCKETS_URL_PREFIX}biomes-bikkie/"
 GALOIS_STATIC_PREFIX = f"{SNAPSHOT_BUCKETS_URL_PREFIX}biomes-static/"
 
 GS_URL_BASE = "gs://biomes-static"
-DOWNLOAD_URL_BASE = "https://static.biomes.gg"
+DEFAULT_DOWNLOAD_URL_BASE = "https://static.biomes.gg"
 
 DATA_SNAPSHOT_FILENAME = "biomes_data_snapshot.tar.gz"
 DATA_SNAPSHOT_GS_URL = f"{GS_URL_BASE}/{DATA_SNAPSHOT_FILENAME}"
-DATA_SNAPSHOT_DOWNLOAD_URL = f"{DOWNLOAD_URL_BASE}/{DATA_SNAPSHOT_FILENAME}"
+
+
+def _snapshot_download_url():
+    """Return the snapshot download URL, overridable via BIOMES_SNAPSHOT_URL."""
+    base = os.environ.get("BIOMES_SNAPSHOT_URL")
+    if base:
+        return base
+    return f"{DEFAULT_DOWNLOAD_URL_BASE}/{DATA_SNAPSHOT_FILENAME}"
+
+
+def _snapshot_local_file():
+    """Return a local snapshot file path if BIOMES_SNAPSHOT_FILE is set."""
+    path = os.environ.get("BIOMES_SNAPSHOT_FILE")
+    if path and not os.path.isfile(path):
+        raise RuntimeError(
+            f"BIOMES_SNAPSHOT_FILE is set to '{path}' but that file does not exist."
+        )
+    return path
 
 SNAPSHOT_BACKUP_PATH = REPO_DIR / "snapshot_backup.json"
 
@@ -184,9 +201,14 @@ def is_installed():
     type=str,
 )
 def download_to_file(path: str):
-    """Install a data snapshot from a file."""
+    """Download the latest data snapshot to a file.
+
+    The download URL defaults to the upstream static.biomes.gg host but can be
+    overridden with the BIOMES_SNAPSHOT_URL environment variable.
+    """
+    url = _snapshot_download_url()
     click.secho(
-        f"Downloading latest data snapshot from '{DATA_SNAPSHOT_DOWNLOAD_URL}' to '{path}'..."
+        f"Downloading latest data snapshot from '{url}' to '{path}'..."
     )
 
     # Ensure the output file does not already exist.
@@ -194,7 +216,21 @@ def download_to_file(path: str):
         raise RuntimeError(f"File '{path}' already exists.")
 
     # Download the file. Use curl to get a progress bar.
-    subprocess.run(["curl", DATA_SNAPSHOT_DOWNLOAD_URL, "--output", path])
+    # --fail makes curl return exit code 22 on HTTP errors (4xx/5xx).
+    result = subprocess.run(["curl", "--fail", "-L", url, "--output", path])
+    if result.returncode != 0:
+        # Clean up partial download so later steps don't see a corrupt file.
+        if os.path.exists(path):
+            os.remove(path)
+        raise RuntimeError(
+            f"Snapshot download failed (curl exit code {result.returncode}).\n"
+            f"  URL: {url}\n"
+            f"  Hint: If the upstream host is unavailable, download the snapshot\n"
+            f"  manually and point to it with:\n"
+            f"    export BIOMES_SNAPSHOT_FILE=/path/to/biomes_data_snapshot.tar.gz\n"
+            f"  Or provide an alternate URL:\n"
+            f"    export BIOMES_SNAPSHOT_URL=https://your-mirror/biomes_data_snapshot.tar.gz"
+        )
 
     click.secho(f"Data snapshot downloaded to {path}.")
 
@@ -202,14 +238,25 @@ def download_to_file(path: str):
 @data_snapshot.command()
 @click.pass_context
 def pull(ctx):
-    """If out of date, downloads and installs the latest snapshot data."""
+    """If out of date, downloads and installs the latest snapshot data.
 
-    # Check to see if we already have the latest snapshot, by comparing the contents of DATA_SNAPSHOT_HASH_DOWNLOAD_URL with the contents of SNAPSHOT_HASH_PATH.
+    Set BIOMES_SNAPSHOT_FILE to a local .tar.gz path to skip the download.
+    Set BIOMES_SNAPSHOT_URL to use an alternate download URL.
+    """
+
     if is_installed():
         click.secho(f"Snapshot is already installed, nothing to do.")
         return
 
-    # Create a temporary data to download to.
+    # Allow supplying a pre-downloaded snapshot file.
+    local_file = _snapshot_local_file()
+    if local_file:
+        click.secho(f"Using local snapshot file: {local_file}")
+        ctx.invoke(install_from_file, path=local_file)
+        click.secho(f"Installed snapshot data from local file.")
+        return
+
+    # Download to a temp directory, then install.
     with tempfile.TemporaryDirectory() as tmpdir:
         path = str(Path(tmpdir) / DATA_SNAPSHOT_FILENAME)
 

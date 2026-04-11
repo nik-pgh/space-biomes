@@ -91,6 +91,16 @@ The `@/galois/*` alias maps to `src/galois/js/*`.
 - C++ follows clang-format (config in `voxeloo/.clang-format`)
 - Python ECS code follows standard formatting (no black/ruff configured at repo level)
 
+## Bootstrap environment variables
+
+These env vars let you work around common local-launch blockers without editing scripts:
+
+| Variable | Purpose | Example |
+| --- | --- | --- |
+| `BIOMES_PYTHON` | Override the Python interpreter used by `pip install ./voxeloo` and `pip install -r requirements.txt`. Useful when only `python3` (not `python`) is on PATH. | `export BIOMES_PYTHON=python3.10` |
+| `BIOMES_SNAPSHOT_FILE` | Path to a pre-downloaded snapshot `.tar.gz`. Skips the download step entirely. | `export BIOMES_SNAPSHOT_FILE=~/biomes_data_snapshot.tar.gz` |
+| `BIOMES_SNAPSHOT_URL` | Alternate URL for the snapshot download (replaces `static.biomes.gg`). | `export BIOMES_SNAPSHOT_URL=https://mirror.example.com/biomes_data_snapshot.tar.gz` |
+
 ## What NOT to do
 
 - Do not modify generated files in `src/gen/` — they are produced by `./b ts-deps build`
