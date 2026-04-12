@@ -106,5 +106,8 @@ async function run() {
 }
 
 if (require.main === module) {
-  void run();
+  run().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }
