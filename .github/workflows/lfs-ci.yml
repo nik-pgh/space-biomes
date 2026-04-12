@@ -1,6 +1,25 @@
 name: lfs-ci
 
-on: pull_request
+on:
+  pull_request:
+    paths:
+      - '**.bin'
+      - '**.glb'
+      - '**.gltf'
+      - '**.ipynb'
+      - '**.mp3'
+      - '**.mp4'
+      - '**.np'
+      - '**.ogg'
+      - '**.png'
+      - '**.tensor'
+      - '**.vox'
+      - '**.wasm'
+      - '**.webm'
+      - 'scratch/alpha_terrain.json'
+      - '.gitattributes'
+      - '.github/actions/cached-lfs-pull/**'
+      - '.github/workflows/lfs-ci.yml'
 
 jobs:
   lfs-ci:
