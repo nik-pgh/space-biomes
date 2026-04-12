@@ -72,11 +72,25 @@ Note that this repo supports dev containers so a quick way to setup your environ
   ./b data-snapshot run
   ```
 
+  If your goal is minimal local bring-up and you do not yet have a complete
+  `biomes-static` mirror, use the supported minimal path instead:
+
+  ```bash
+  export BIOMES_SNAPSHOT_DIR="$PWD/tmp/reconstructed-snapshot"
+  ./b data-snapshot run-minimal
+  ```
+
+  `run` remains the strict path and will stop on missing assets. `run-minimal`
+  downgrades the asset completeness check to a warning so Redis and web startup
+  can be validated with the repo-local snapshot seed. Expect 404s or missing
+  media for assets that are not present locally.
+
   If you want to run Python commands directly, do it through the helper so they resolve the same interpreter and venv as `./b`:
 
   ```bash
   ./scripts/with_biomes_python.sh python -m pip --version
   ./scripts/with_biomes_python.sh python ./scripts/b/bootstrap.py data-snapshot run
+  ./scripts/with_biomes_python.sh python ./scripts/b/bootstrap.py data-snapshot run-minimal
   ```
 - Visit `http://localhost:3000`.
 
