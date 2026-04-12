@@ -32,7 +32,31 @@ The backup seed came from the earlier local reconstruction attempt at `/private/
 
 ## How to use it
 
-From repo root:
+For a repo-supported minimal bring-up path that does not require full
+`biomes-static` completeness:
+
+```bash
+export BIOMES_SNAPSHOT_DIR="$PWD/tmp/reconstructed-snapshot"
+./b data-snapshot run-minimal
+```
+
+Or through the Python bootstrap entrypoint:
+
+```bash
+./scripts/with_biomes_python.sh python ./scripts/b/bootstrap.py data-snapshot run-minimal
+```
+
+The default strict path is still:
+
+```bash
+./b data-snapshot run
+```
+
+That command still requires full asset completeness and will stop on missing
+assets such as `audio/applause`.
+
+If you only want to verify that snapshot install sources locally, without
+starting the full stack, use:
 
 ```bash
 export BIOMES_SNAPSHOT_DIR="$PWD/tmp/reconstructed-snapshot"
@@ -51,8 +75,14 @@ env PYTHONPATH=scripts:scripts/b \
 
 This local directory is enough for snapshot installation to source inputs locally instead of attempting the dead upstream download URL.
 
+`./b data-snapshot run-minimal` extends that into a supported bring-up path:
+it installs the snapshot, warns on missing assets, and proceeds to Redis/web
+startup so local boot can be validated without waiting on full `biomes-static`
+ reconstruction.
+
 ## Remaining completeness gaps
 
 1. `buckets/biomes-static/` is still only a scaffold, not a populated asset mirror.
 2. `buckets/biomes-bikkie/` is still empty, so runtime fetches for binary bikkie assets will still 404 later.
 3. `backup.json` is only the minimal synthetic bikkie seed, with no ECS world entity payload, so Redis bootstrap may move to a later blocker after install succeeds.
+4. `run-minimal` is intentionally weaker validation than `run`: it proves minimal bring-up only, not that local asset serving is production-complete.
