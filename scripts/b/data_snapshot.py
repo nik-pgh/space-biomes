@@ -53,6 +53,16 @@ def _snapshot_local_file():
         )
     return path
 
+
+def _snapshot_local_dir():
+    """Return a local snapshot directory if BIOMES_SNAPSHOT_DIR is set."""
+    path = os.environ.get("BIOMES_SNAPSHOT_DIR")
+    if path and not os.path.isdir(path):
+        raise RuntimeError(
+            f"BIOMES_SNAPSHOT_DIR is set to '{path}' but that directory does not exist."
+        )
+    return path
+
 SNAPSHOT_BACKUP_PATH = REPO_DIR / "snapshot_backup.json"
 
 REDIS_BOOTSTRAP_HASH_KEY = "biomes_data_snapshot_hash"
@@ -139,6 +149,31 @@ def push(ctx):
         ctx.invoke(upload_from_file, path=path)
 
 
+def _install_snapshot_from_unpacked_dir(path: Path):
+    backup_path = path / "backup.json"
+    buckets_path = path / "buckets"
+
+    if not backup_path.is_file():
+        raise RuntimeError(
+            f"Snapshot directory '{path}' is missing required file 'backup.json'."
+        )
+    if not buckets_path.is_dir():
+        raise RuntimeError(
+            f"Snapshot directory '{path}' is missing required directory 'buckets'."
+        )
+
+    if SNAPSHOT_BACKUP_PATH.exists():
+        SNAPSHOT_BACKUP_PATH.unlink()
+    shutil.copy2(backup_path, SNAPSHOT_BACKUP_PATH)
+
+    SNAPSHOT_BUCKETS_PATH.mkdir(exist_ok=True, parents=True)
+    for file in buckets_path.iterdir():
+        dir = SNAPSHOT_BUCKETS_PATH / file.name
+        if dir.exists():
+            shutil.rmtree(dir)
+        shutil.copytree(file, dir)
+
+
 @data_snapshot.command()
 @click.argument(
     "path",
@@ -155,21 +190,27 @@ def install_from_file(path: str):
     # Create a temporary directory to unpack into.
     with tempfile.TemporaryDirectory() as tmpdir:
         # Unpack the file.
-        subprocess.run(["tar", "-xzf", path, "-C", tmpdir])
-
-        # Install the snapshot files.
-        shutil.move(Path(tmpdir) / "backup.json", SNAPSHOT_BACKUP_PATH)
-        # Ensure that the snapshot buckets directory exists.
-        SNAPSHOT_BUCKETS_PATH.mkdir(exist_ok=True, parents=True)
-        # Move the contents of "buckets" into the snapshot buckets directory.
-        for file in (Path(tmpdir) / "buckets").iterdir():
-            # First remove the directory if it already exists.
-            dir = SNAPSHOT_BUCKETS_PATH / file.name
-            if (dir).exists():
-                shutil.rmtree(dir)
-            shutil.move(file, dir)
+        subprocess.run(["tar", "-xzf", path, "-C", tmpdir], check=True)
+        _install_snapshot_from_unpacked_dir(Path(tmpdir))
 
     click.secho(f"Done installing data snapshot.")
+
+
+@data_snapshot.command()
+@click.argument(
+    "path",
+    type=str,
+)
+def install_from_directory(path: str):
+    """Install a data snapshot from an already unpacked directory."""
+    click.secho(f"Installing data snapshot from directory '{path}'...")
+
+    source_path = Path(path)
+    if not source_path.is_dir():
+        raise RuntimeError(f"Directory '{path}' does not exist.")
+
+    _install_snapshot_from_unpacked_dir(source_path)
+    click.secho("Done installing data snapshot.")
 
 
 @data_snapshot.command()
@@ -240,12 +281,21 @@ def download_to_file(path: str):
 def pull(ctx):
     """If out of date, downloads and installs the latest snapshot data.
 
+    Set BIOMES_SNAPSHOT_DIR to an unpacked local snapshot directory.
     Set BIOMES_SNAPSHOT_FILE to a local .tar.gz path to skip the download.
     Set BIOMES_SNAPSHOT_URL to use an alternate download URL.
     """
 
     if is_installed():
         click.secho(f"Snapshot is already installed, nothing to do.")
+        return
+
+    # Allow supplying an already reconstructed snapshot directory.
+    local_dir = _snapshot_local_dir()
+    if local_dir:
+        click.secho(f"Using local snapshot directory: {local_dir}")
+        ctx.invoke(install_from_directory, path=local_dir)
+        click.secho("Installed snapshot data from local directory.")
         return
 
     # Allow supplying a pre-downloaded snapshot file.
