@@ -22,6 +22,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: git lfs pull
         uses: ./.github/actions/cached-lfs-pull
       - name: yarn install
@@ -41,6 +45,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: git lfs pull
         uses: ./.github/actions/cached-lfs-pull
       - name: yarn install
@@ -60,6 +68,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: git lfs pull
         uses: ./.github/actions/cached-lfs-pull
       - name: yarn install
