@@ -42,6 +42,18 @@ yarn install
 
 The `data-snapshot run` command downloads a pre-built world snapshot (terrain, assets, Bikkie biscuits) and starts all services. First run takes significantly longer due to the snapshot download.
 
+For minimal local boot validation when `biomes-static` is still incomplete,
+use:
+
+```bash
+export BIOMES_SNAPSHOT_DIR="$PWD/tmp/reconstructed-snapshot"
+./b data-snapshot run-minimal
+```
+
+That path keeps the snapshot install and local bring-up flow, but only warns on
+missing assets instead of failing fast. It is useful for bring-up validation,
+not for proving full local asset completeness.
+
 ### Dev Container / Codespaces
 
 The repo includes a `.devcontainer/` configuration. GitHub Codespaces with a **16-core / 64 GB** machine type is supported. Always use VS Code (not browser) to access `localhost:3000`.
@@ -82,7 +94,7 @@ Each handler receives an ECS event, validates it, and produces component mutatio
 
 ### Modifying Static Content (Bikkie)
 
-1. Start the server locally (`./b data-snapshot run`)
+1. Start the server locally (`./b data-snapshot run` or `./b data-snapshot run-minimal` for incomplete local assets)
 2. Navigate to `http://localhost:3000/admin`
 3. Use the Biscuit editor to modify items, blocks, quests, etc.
 4. Changes are live immediately in the local environment

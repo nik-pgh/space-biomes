@@ -63,6 +63,21 @@ def _snapshot_local_dir():
         )
     return path
 
+
+def _print_minimal_boot_warning():
+    click.secho(
+        "Continuing with minimal local boot validation despite missing assets.",
+        fg=WARNING_COLOR,
+    )
+    click.secho(
+        "Tradeoff: missing biomes-static assets can still 404 at runtime; this path validates bring-up, not full local asset completeness.",
+        fg=WARNING_COLOR,
+    )
+    click.secho(
+        "Recommended seed: BIOMES_SNAPSHOT_DIR=$PWD/tmp/reconstructed-snapshot",
+        fg=WARNING_COLOR,
+    )
+
 SNAPSHOT_BACKUP_PATH = REPO_DIR / "snapshot_backup.json"
 
 REDIS_BOOTSTRAP_HASH_KEY = "biomes_data_snapshot_hash"
@@ -375,15 +390,7 @@ def ensure_redis_populated(ctx):
     ctx.invoke(populate_redis)
 
 
-@data_snapshot.command()
-@click.option(
-    "--pip-install/--no-pip-install",
-    help="Whether or not `pip install ./voxeloo` will get called before commands that need it.",
-    default=True,
-)
-@click.pass_context
-def run(ctx, pip_install: bool):
-    """Run with from data snapshot."""
+def _run_with_snapshot(ctx, pip_install: bool, error_on_missing_assets: bool):
     if pip_install:
         run_pip_install_requirements()
         run_pip_install_voxeloo()
@@ -392,8 +399,11 @@ def run(ctx, pip_install: bool):
 
     # Make sure our data snapshot exists and is up-to-date.
     ctx.invoke(pull)
-    # Ensure all assets have been downloaded.
-    ctx.invoke(check_for_missing_assets, error_on_missing=True)
+    assets_missing = ctx.invoke(
+        check_for_missing_assets, error_on_missing=error_on_missing_assets
+    )
+    if assets_missing and not error_on_missing_assets:
+        _print_minimal_boot_warning()
 
     with RedisServer():
         # Make sure our Redis server is populated with the data snapshot.
@@ -411,6 +421,34 @@ def run(ctx, pip_install: bool):
             galois_static_prefix=GALOIS_STATIC_PREFIX,
             local_gcs=True,
         )
+
+
+@data_snapshot.command()
+@click.option(
+    "--pip-install/--no-pip-install",
+    help="Whether or not `pip install ./voxeloo` will get called before commands that need it.",
+    default=True,
+)
+@click.pass_context
+def run(ctx, pip_install: bool):
+    """Run with from data snapshot."""
+    _run_with_snapshot(
+        ctx, pip_install=pip_install, error_on_missing_assets=True
+    )
+
+
+@data_snapshot.command()
+@click.option(
+    "--pip-install/--no-pip-install",
+    help="Whether or not `pip install ./voxeloo` will get called before commands that need it.",
+    default=True,
+)
+@click.pass_context
+def run_minimal(ctx, pip_install: bool):
+    """Run a minimal local boot validation path without requiring full asset completeness."""
+    _run_with_snapshot(
+        ctx, pip_install=pip_install, error_on_missing_assets=False
+    )
 
 
 def redis_cli(command: str, db=0):
@@ -492,5 +530,4 @@ def check_for_missing_assets(ctx, error_on_missing=True) -> bool:
     elif not assets_missing:
         click.secho("Assets are up-to-date", fg=GOOD_COLOR)
     return assets_missing
-
 

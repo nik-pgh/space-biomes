@@ -117,6 +117,7 @@ Key sub-commands (inferred from `scripts/b/`):
 | Command | Purpose |
 |---------|---------|
 | `./b data-snapshot run` | Pull data snapshot and start all services |
+| `./b data-snapshot run-minimal` | Pull data snapshot and validate minimal local bring-up without requiring full asset completeness |
 | `./b data-snapshot pull` | Download latest asset snapshot |
 | `./b data-snapshot uninstall` | Remove local snapshot |
 | `./b gen:ecs` | Regenerate ECS TypeScript from Python definitions |
