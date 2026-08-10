@@ -82,6 +82,7 @@ export class DevAssetServer implements AssetServer {
 export class BatchAssetServer implements AssetServer {
   private process: ChildProcess | undefined;
   private queue: Promise<unknown> = Promise.resolve();
+  private exitCode: number | null = null;
 
   constructor(
     execDir: string,
@@ -103,6 +104,9 @@ export class BatchAssetServer implements AssetServer {
         windowsHide: true,
       }
     );
+    this.process.on("exit", (code) => {
+      this.exitCode = code;
+    });
   }
 
   private send(data: string) {
@@ -133,10 +137,23 @@ export class BatchAssetServer implements AssetServer {
           input: this.process.stdio[4] as Readable,
           crlfDelay: Infinity,
         });
+        let settled = false;
         rl.once("line", (data) => {
+          if (settled) return;
+          settled = true;
           const result = Buffer.from(data.slice(2, data.length - 1), "base64");
           resolve(parseBuildResult(result));
           rl.close();
+        });
+        rl.once("close", () => {
+          if (settled) return;
+          settled = true;
+          reject(
+            new Error(
+              `Asset build server exited unexpectedly (exit code: ${this.exitCode}). ` +
+                `Check stderr output above for Python errors.`
+            )
+          );
         });
       });
     });
