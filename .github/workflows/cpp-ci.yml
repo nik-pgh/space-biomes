@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Install pinned clang-format
+        run: pipx install clang-format==15.0.7
       - run: scripts/clang-format-checks.sh -c
 
   clang-tidy:
